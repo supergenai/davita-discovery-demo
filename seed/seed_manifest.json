@@ -1,0 +1,115 @@
+{
+  "_about": "Seed content for the OpenWorker discovery demo. Non-PHI, fictional. Space=Davitademo, Jira=BP2. Contains a DELIBERATE CONTRADICTION (two incompatible no-show-rate definitions: PAGE glossary vs. dashboard spec) and a CLOSED SPIKE (BP2 spike, Won't Do) that recommends against the SMS-only approach the active epic assumes.",
+  "space_key": "~71202087d07093cbdf419895df9183abeeea5f",
+  "jira_project": "BP2",
+  "confluence_pages": [
+    {
+      "title": "Patient Transport No-Show Reduction — Program Charter",
+      "labels": ["transport", "no-show", "charter"],
+      "body": "# Program Charter\n\n**Problem.** Missed non-emergency medical transport (NEMT) trips at regional clinics waste capacity, delay care, and inflate cost per completed visit. Leadership has asked us to cut the transport no-show rate for regional clinics by 30% within two quarters.\n\n**Scope.** Regional outpatient clinics using contracted NEMT and rideshare. Excludes inpatient discharge transport and emergency transport.\n\n**Success metric.** Transport no-show rate (see Glossary). Target: from baseline to a 30% relative reduction.\n\n**Sponsors.** VP Clinic Operations. **Product owner:** Regional Access squad.\n\n**Key bets under consideration.** (1) Automated SMS reminders. (2) Live caller confirmation. (3) Rideshare fallback for same-day gaps. Each has an evaluation below; note the pilots and the closed spike before committing.\n"
+    },
+    {
+      "title": "Glossary — Transport Metrics (authoritative definitions)",
+      "labels": ["glossary", "metrics", "no-show"],
+      "body": "# Transport Metrics Glossary\n\nThese are the **authoritative** metric definitions for the program. Report against these.\n\n**Transport no-show rate.** Of all *scheduled* transport trips in a period, the share where the patient did not board and did **not** cancel at least 2 hours ahead.\n\n`no_show_rate = no_shows / scheduled_trips`\n\n- Same-day cancellations made 2+ hours before pickup are **excluded** from the numerator (they are counted as cancellations, not no-shows).\n- Denominator is **all scheduled trips**, including those later cancelled.\n\n**Completed trip.** Patient boarded and reached the clinic.\n\n**Cancellation.** Trip called off by patient or clinic before pickup, at any notice.\n\n> Owner: Access Analytics. Last reviewed this quarter.\n"
+    },
+    {
+      "title": "Regional Ops Dashboard — Spec v2",
+      "labels": ["dashboard", "metrics", "reporting"],
+      "body": "# Regional Ops Dashboard — Spec v2\n\nThe dashboard surfaces transport reliability for regional clinic managers.\n\n## Tile: No-Show Rate\n\nWe compute the **no-show rate** as no-shows divided by *completed-or-no-show* trips. Cancellations are removed from the denominator entirely so managers see reliability among trips that were actually 'live' at pickup time.\n\n`no_show_rate = no_shows / (completed_trips + no_shows)`\n\nAlso note: for this tile, **any same-day cancellation** (regardless of notice) is rolled into no-shows, because from the driver's route perspective a late same-day cancel behaves like a no-show.\n\n> This is the number shown to regional managers in the weekly reliability review.\n"
+    },
+    {
+      "title": "2024 No-Show Baseline Analysis",
+      "labels": ["analysis", "baseline", "no-show"],
+      "body": "# 2024 Baseline Analysis\n\nBaseline transport no-show rate across regional clinics: **18.4%** (per the Glossary definition). Range 11%–27% by site.\n\nTop associated factors (correlational, not causal): trips scheduled >7 days out, no confirmed contact number on file, first-time transport users, and pickup windows before 8am.\n\nNote: an earlier version of this analysis reported **24%** — that figure used the Ops Dashboard definition, which removes cancellations from the denominator and folds same-day cancels into no-shows. The two numbers are not comparable. Pick one definition before setting the target.\n"
+    },
+    {
+      "title": "Pilot A — Automated SMS Reminders (results)",
+      "labels": ["pilot", "sms", "results"],
+      "body": "# Pilot A — Automated SMS Reminders\n\n**Design.** 6 weeks, 2 clinics, automated SMS at T-24h and T-2h. Control group received no SMS.\n\n**Result.** No-show rate moved from 17.9% to 16.8% in the treatment arm — a ~6% relative reduction, **not statistically significant** at the pilot's sample size. Opt-out rate 4%. ~22% of numbers on file were invalid or landlines (SMS undeliverable).\n\n**Read.** SMS alone underperformed the 30% target badly. The invalid-number problem caps SMS reach. See the closed spike for the recommendation this fed into.\n"
+    },
+    {
+      "title": "Pilot B — Live Caller Confirmation (results)",
+      "labels": ["pilot", "callers", "results"],
+      "body": "# Pilot B — Live Caller Confirmation\n\n**Design.** 6 weeks, 2 clinics, staff called each patient at T-24h to confirm and re-book if needed.\n\n**Result.** No-show rate 18.1% → 12.3% — a ~32% relative reduction, significant. Cost: ~7 staff-minutes per trip. Reached 61% of patients live; voicemail for the rest.\n\n**Read.** Live contact cleared the target but is labor-intensive. Hybrid (auto-reminder + live call only for unconfirmed/high-risk) is the obvious next design.\n"
+    },
+    {
+      "title": "Rideshare Fallback — Vendor Evaluation",
+      "labels": ["rideshare", "vendor", "evaluation"],
+      "body": "# Rideshare Fallback Evaluation\n\nEvaluated two rideshare APIs for same-day gap coverage when a contracted NEMT trip falls through.\n\n- Coverage good in metro-adjacent regions, thin in rural sites (>25 min ETA).\n- Wheelchair-accessible vehicle availability is the binding constraint; both vendors under-supply it.\n- Cost per completed trip competitive vs. NEMT for short urban trips only.\n\n**Read.** Useful as a fallback for ambulatory patients in denser regions; not a primary channel and not a fix for the accessibility segment.\n"
+    },
+    {
+      "title": "Literature & Prior-Art Scan — No-Show Drivers",
+      "labels": ["research", "literature"],
+      "body": "# Prior-Art Scan\n\nSummary of external and internal prior findings on missed medical transport:\n\n- Reminders help most when they enable *action* (easy reschedule/confirm), not just notification.\n- Single-channel reminders plateau quickly; multi-touch and live contact outperform.\n- Data quality (valid phone numbers) is a common hidden ceiling on any messaging approach.\n- Transportation *availability* (accessible vehicles, rural ETA) is a distinct problem from *reminders* and needs its own track.\n\n**Implication.** Treating no-shows as purely a reminder problem under-scopes it.\n"
+    },
+    {
+      "title": "EPIC BRIEF — Automated SMS Reminder Rollout (active)",
+      "labels": ["epic", "sms", "active"],
+      "body": "# Epic Brief — Automated SMS Reminder Rollout\n\n**Status: ACTIVE / committed for this quarter.**\n\n**Assumption.** Automated SMS reminders are the primary lever to hit the 30% no-show reduction target. Plan: roll SMS reminders to all regional clinics, no live-caller component.\n\n**Assumed impact.** 25–30% relative reduction in no-show rate from SMS alone.\n\n**Open dependency.** Requires valid mobile numbers on file (assumed ~95% coverage).\n\n> NOTE FOR REVIEWERS: this epic's core assumption conflicts with Pilot A results and the closed spike BP2 below. Reconcile before build.\n"
+    },
+    {
+      "title": "Spike Write-up — SMS-Only Reminder Approach (CLOSED, Won't Do)",
+      "labels": ["spike", "closed", "sms", "decision"],
+      "body": "# Spike Write-up — Is SMS-Only Sufficient? (CLOSED — Won't Do)\n\nMirror of Jira spike **BP2** (resolution: Won't Do).\n\n**Question.** Can an SMS-only reminder program deliver the 30% no-show reduction target?\n\n**Findings.** No. Pilot A showed ~6% relative reduction (not significant), capped by ~22% invalid/landline numbers. Target requires live or hybrid contact (Pilot B: ~32%).\n\n**Recommendation.** Do NOT pursue SMS-only. Adopt a hybrid: automated reminder + live confirmation for unconfirmed/high-risk trips, and fix phone-number data quality first.\n\n**Decision.** Spike closed Won't Do. Any epic assuming SMS-only should be re-scoped.\n"
+    },
+    {
+      "title": "Patient Segments & Access Barriers",
+      "labels": ["segments", "access"],
+      "body": "# Patient Segments & Barriers\n\n- **Ambulatory, metro-adjacent:** reminders + rideshare fallback work well.\n- **Wheelchair/accessibility-dependent:** blocked by accessible-vehicle supply, not reminders.\n- **Rural:** long ETAs; scheduling density is the lever.\n- **Low data-quality contacts:** no valid mobile — unreachable by SMS; need address/landline outreach.\n\nSegment mix varies widely by site; a single channel will not serve all four.\n"
+    },
+    {
+      "title": "Scheduling System Constraints",
+      "labels": ["scheduling", "constraints", "tech"],
+      "body": "# Scheduling System Constraints\n\n- Transport booking lives in a separate system from clinical scheduling; sync lag up to 30 min.\n- Phone number field is free-text and not validated at entry — root cause of the invalid-number ceiling.\n- No native hook for T-2h automated messaging; requires middleware.\n- Same-day re-booking is manual.\n\nThese constraints bound how well ANY reminder channel can perform until data entry is fixed.\n"
+    },
+    {
+      "title": "Stakeholders & Owners",
+      "labels": ["stakeholders", "raci"],
+      "body": "# Stakeholders & Owners\n\n- **VP Clinic Operations** — sponsor, target owner.\n- **Regional Access squad** — product owner, delivery.\n- **Access Analytics** — metric definitions, measurement (owns the Glossary).\n- **NEMT vendor management** — contracts, accessible-vehicle supply.\n- **Clinic managers** — consume the Ops Dashboard weekly.\n\nNote: Analytics owns the Glossary definition; the Dashboard team maintains a different one. Not yet reconciled.\n"
+    },
+    {
+      "title": "Decision Log",
+      "labels": ["decisions", "log"],
+      "body": "# Decision Log\n\n1. Target set at 30% relative reduction in transport no-show rate (definition: TBD — Glossary vs Dashboard unresolved).\n2. Pilot A (SMS) and Pilot B (live caller) run. Pilot B hit target; Pilot A did not.\n3. Spike BP2 closed Won't Do: SMS-only insufficient; hybrid recommended.\n4. OPEN: 'Automated SMS Reminder Rollout' epic still active despite (2) and (3). Needs reconciliation.\n5. OPEN: pick ONE no-show-rate definition before reporting progress.\n"
+    }
+  ],
+  "jira_issues": [
+    {
+      "key_hint": "epic",
+      "issuetype": "Epic",
+      "summary": "Automated SMS Reminder Rollout for regional clinic transport",
+      "description": "Roll automated SMS reminders (T-24h, T-2h) to all regional clinics as the PRIMARY lever to reduce transport no-shows by 30%. Assumes SMS-only is sufficient and ~95% valid mobile coverage. NOTE: conflicts with Pilot A results and closed spike (SMS-only insufficient).",
+      "target_status": "In Progress"
+    },
+    {
+      "key_hint": "spike",
+      "issuetype": "Task",
+      "summary": "SPIKE: Is an SMS-only reminder program sufficient to hit the 30% no-show target?",
+      "description": "Investigate whether SMS-only reminders can achieve the 30% reduction. FINDING: No — Pilot A ~6% (n.s.), capped by ~22% invalid/landline numbers; Pilot B live-caller ~32%. RECOMMENDATION: do NOT pursue SMS-only; adopt hybrid (auto + live confirmation for unconfirmed/high-risk) and fix phone-number data quality first. Resolution: Won't Do.",
+      "target_status": "Done",
+      "target_resolution": "Won't Do"
+    },
+    {
+      "key_hint": "story1",
+      "issuetype": "Story",
+      "summary": "Validate mobile phone numbers at transport booking entry",
+      "description": "Add validation to the free-text phone field; root cause of the ~22% SMS-undeliverable ceiling.",
+      "target_status": "To Do"
+    },
+    {
+      "key_hint": "story2",
+      "issuetype": "Story",
+      "summary": "Design hybrid reminder flow (auto reminder + live confirmation for high-risk trips)",
+      "description": "Per Pilot B and spike recommendation: automated reminder for all, live call only for unconfirmed/high-risk. Target 30% reduction at lower labor cost than all-live.",
+      "target_status": "To Do"
+    },
+    {
+      "key_hint": "story3",
+      "issuetype": "Story",
+      "summary": "Reconcile the two no-show-rate definitions (Glossary vs Ops Dashboard)",
+      "description": "Glossary: no_shows/scheduled_trips, excluding 2h+ cancels. Dashboard: no_shows/(completed+no_shows), folding same-day cancels into no-shows. Pick one before reporting target progress.",
+      "target_status": "To Do"
+    }
+  ]
+}
