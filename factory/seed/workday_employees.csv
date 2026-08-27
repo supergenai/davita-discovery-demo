@@ -1,0 +1,7 @@
+employee_id,employment_status,term_date,transfer_date,current_role
+E100,Active,,,Facility Admin
+E101,Terminated,2025-11-01,,Facility Admin
+E102,Active,,,Regional Ops Director
+E103,Active,,,Facility Admin
+E104,Active,,2024-10-01,Facility Admin
+E105,Terminated,2022-01-01,,Regional Ops Director

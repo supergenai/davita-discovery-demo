@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars and fill in. Run terraform from factory/infra with:
+#   terraform init && terraform apply -var-file=envs/dev/terraform.tfvars
+project_id = "your-existing-gcp-project"
+region     = "us-central1"
+agent_id   = "admin-turnover-dq"
+schedule   = "0 6 * * 1"
+# agent_target_uri is set AFTER the agent is deployed (Agent Engine / Cloud Run endpoint).
+agent_target_uri = ""

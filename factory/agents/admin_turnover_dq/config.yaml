@@ -1,0 +1,30 @@
+# Admin Turnover Reconciliation DQ agent - a spoke on the factory.
+# This whole file is the "pluggable per use case" surface. To ship a new agent,
+# write another one of these.
+name: admin_turnover_dq
+description: >
+  Reconciles Facility Admin / Regional Ops Director records across Oracle MDM,
+  Workday, and CWOW to catch turnover-driven data-quality mismatches.
+model: gemini-2.5-flash        # verify availability in your project/region
+surface: background            # headless: Cloud Scheduler -> Agent Engine
+autonomy: L2                   # email requires human confirm via the HITL queue
+
+trigger:
+  kind: schedule
+  schedule: "0 6 * * 1"        # weekly, Monday 06:00
+
+sources: [mdm, workday, cwow]
+skills: [bigquery_write, looker, elie]
+rules: "agents.admin_turnover_dq.rules:reconcile"
+
+action:
+  write_bigquery: "dq_results.admin_turnover"
+  refresh_looker: true
+  hitl_review: true            # HIGH-severity mismatches -> ops.review_queue -> ELie on confirm
+
+business_context:
+  turnover_definition: >
+    A Facility Admin or Regional Ops Director is considered "turned over" when
+    Workday shows a termination or transfer that MDM/CWOW has not yet reflected.
+  instructions: >
+    Prioritize terminated-but-active records first; they are the highest compliance risk.

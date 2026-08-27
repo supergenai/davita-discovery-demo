@@ -1,0 +1,18 @@
+[project]
+name = "davita-agent-factory"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.141.1",
+    "google-adk>=2.8.0",
+    "google-cloud-aiplatform[agent-engines]>=1.165.1",
+    "google-cloud-bigquery>=3.44.0",
+    "pydantic>=2",
+    "python-dotenv>=1.2.3",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
