@@ -8,7 +8,8 @@ Online this attaches Cloud Logging; offline it is plain structured logging.
 from __future__ import annotations
 
 import logging
-import os
+
+from .settings import get_settings
 
 
 def configure(agent_id: str) -> logging.Logger:
@@ -16,7 +17,8 @@ def configure(agent_id: str) -> logging.Logger:
         level=logging.INFO,
         format=f"%(levelname)s agent_id={agent_id} %(name)s: %(message)s",
     )
-    if os.getenv("GOOGLE_CLOUD_PROJECT") and os.getenv("FACTORY_CLOUD_LOGGING") == "1":
+    s = get_settings()
+    if s.project and s.cloud_logging:
         try:  # pragma: no cover - requires GCP
             import google.cloud.logging
 

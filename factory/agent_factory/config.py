@@ -7,7 +7,6 @@ guardrails, business logic, HITL, action). Nothing here is agent-specific code.
 
 from __future__ import annotations
 
-import os
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -68,7 +67,9 @@ class AgentSpec(BaseModel):
 
 
 def offline() -> bool:
-    """True when no GCP project is configured; sources read local seed CSVs and
-    actions/LLM steps run in stub mode. Lets the deterministic core be tested
-    without any cloud credentials."""
-    return not os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("FACTORY_OFFLINE") == "1"
+    """True when no GCP project is configured (or FACTORY_OFFLINE=1); sources read
+    local seed CSVs and actions/LLM steps run in stub mode. Delegates to settings
+    so all environment config lives in one place."""
+    from .settings import get_settings
+
+    return get_settings().offline

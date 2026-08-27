@@ -34,14 +34,14 @@ def _read_csv(filename: str) -> list[dict[str, Any]]:
 
 @lru_cache(maxsize=None)
 def _read_bigquery(table: str) -> tuple[dict[str, Any], ...]:
-    import os
-
     from google.cloud import bigquery
 
-    client = bigquery.Client(project=os.environ["GOOGLE_CLOUD_PROJECT"])
-    dataset = os.getenv("FACTORY_DATASET_PREFIX", "")
-    fq = f"`{client.project}`.{dataset}{table}" if dataset else f"{table}"
-    rows = client.query(f"SELECT * FROM {fq}").result()
+    from .settings import get_settings
+
+    s = get_settings()
+    client = bigquery.Client(project=s.project)
+    fq = f"{s.dataset_prefix}{table}" if s.dataset_prefix else table
+    rows = client.query(f"SELECT * FROM `{s.project}`.{fq}").result()
     return tuple(dict(r) for r in rows)
 
 

@@ -29,6 +29,17 @@ infra/                # Terraform (project APIs, BigQuery, per-agent SA, schedul
 tests/                # deterministic reconciliation + factory wiring
 ```
 
+## Configuration (one place to swap projects)
+All environment config lives in `agent_factory/settings.py`, read from env vars / a
+`factory/.env` file (copy `.env.example`). Nothing project-specific is hardcoded in
+code. To move from the demo project to the enterprise project later, change two lines:
+- `factory/.env`: `GOOGLE_CLOUD_PROJECT` (+ region)
+- `infra/envs/dev/terraform.tfvars`: `project_id` (+ region)
+
+Knobs: `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_REGION`, `FACTORY_OFFLINE` (force stub mode),
+`FACTORY_DATASET_PREFIX`, `AGENT_SERVICE_ACCOUNT`, `FACTORY_USE_DLP`, `FACTORY_CLOUD_LOGGING`,
+`FACTORY_TIME_ZONE`, `ELIE_DEFAULT_RECIPIENT`. `.env` and `terraform.tfvars` are gitignored.
+
 ## Run locally (offline, no GCP)
 ```bash
 uv sync
