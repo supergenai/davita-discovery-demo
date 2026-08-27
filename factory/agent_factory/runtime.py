@@ -35,18 +35,18 @@ def deploy(config_path: str):  # pragma: no cover - requires GCP
     the remote build cannot import agent_factory/agents), runs under the per-agent
     service account, and passes runtime env so cloud mode (not offline) is used.
     """
-    import os
-
     import vertexai
     from vertexai import agent_engines
     from vertexai.preview.reasoning_engines import AdkApp
 
+    from .settings import get_settings
+
     spec = AgentSpec.load(config_path)
-    if offline():
+    s = get_settings()
+    if s.offline or not s.project:
         raise RuntimeError("deploy needs GOOGLE_CLOUD_PROJECT + GOOGLE_CLOUD_REGION set")
-    project = os.environ["GOOGLE_CLOUD_PROJECT"]
-    region = os.environ["GOOGLE_CLOUD_REGION"]
-    vertexai.init(project=project, location=region)
+    project, region = s.project, s.region
+    vertexai.init(project=project, location=region, staging_bucket=s.staging_bucket)
 
     app = AdkApp(agent=build_agent(spec), enable_tracing=True)
     remote = agent_engines.create(
@@ -58,8 +58,10 @@ def deploy(config_path: str):  # pragma: no cover - requires GCP
             "google-cloud-bigquery", "pydantic>=2", "pyyaml",
         ],
         extra_packages=["agent_factory", "agents"],  # our source, uploaded to the build
-        service_account=os.getenv("AGENT_SERVICE_ACCOUNT"),  # per-agent SA (Terraform output)
-        env_vars={"GOOGLE_CLOUD_PROJECT": project, "GOOGLE_CLOUD_REGION": region},
+        service_account=s.agent_service_account,  # per-agent SA (Terraform output)
+        # NOTE: GOOGLE_CLOUD_PROJECT/REGION are reserved by Agent Engine and injected
+        # automatically, so we only force online mode here.
+        env_vars={"FACTORY_OFFLINE": "0"},
     )
     log.info("deployed '%s' -> %s", spec.name, remote.resource_name)
     return remote

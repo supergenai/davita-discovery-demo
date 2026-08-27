@@ -11,7 +11,6 @@ They are attached in factory.build_agent(). Returning a value short-circuits the
 from __future__ import annotations
 
 import logging
-import os
 import re
 from typing import Any
 
@@ -41,18 +40,21 @@ def make_tool_guard(allowed: set[str], max_calls: int = 25):
 
 def deidentify(text: str) -> str:
     """Mask obvious PII. Offline uses regex; online swap for Cloud DLP."""
-    if os.getenv("GOOGLE_CLOUD_PROJECT") and os.getenv("FACTORY_USE_DLP") == "1":
-        return _dlp_deidentify(text)
+    from .settings import get_settings
+
+    s = get_settings()
+    if s.project and s.use_dlp:
+        return _dlp_deidentify(text, s.project)
     text = _SSN.sub("[SSN]", text)
     text = _EMAIL.sub("[EMAIL]", text)
     return text
 
 
-def _dlp_deidentify(text: str) -> str:  # pragma: no cover - requires GCP + DLP API
+def _dlp_deidentify(text: str, project: str) -> str:  # pragma: no cover - requires GCP + DLP API
     from google.cloud import dlp_v2
 
     client = dlp_v2.DlpServiceClient()
-    parent = f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}"
+    parent = f"projects/{project}"
     resp = client.deidentify_content(request={
         "parent": parent,
         "item": {"value": text},

@@ -9,14 +9,13 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from .business_logic import Mismatch, Severity
 from .config import offline
+from .settings import get_settings
 from .sinks import LOCAL_OUT, send_elie
 
 log = logging.getLogger("factory.hitl")
@@ -32,7 +31,12 @@ def enqueue(agent: str, mismatches: list[Mismatch], min_severity: Severity = Sev
             "agent": agent,
             "status": "pending",
             "created_at": datetime.now(timezone.utc).isoformat(),
-            **m.model_dump(),
+            "kind": m.kind,
+            "severity": m.severity.value,
+            "employee_id": m.employee_id,
+            "facility_id": m.facility_id,
+            "detail": m.detail,
+            "reviewer": None,
         }
         for m in mismatches
         if order[m.severity] >= order[min_severity]
@@ -45,10 +49,9 @@ def enqueue(agent: str, mismatches: list[Mismatch], min_severity: Severity = Sev
         existing.extend(items)
         QUEUE_FILE.write_text(json.dumps(existing, indent=2, default=str))
     else:
-        from google.cloud import bigquery
+        from .sinks import _bq_insert
 
-        client = bigquery.Client(project=os.environ["GOOGLE_CLOUD_PROJECT"])
-        client.insert_rows_json(f"{client.project}.ops.review_queue", items)
+        _bq_insert(f"{get_settings().project}.ops.review_queue", items)
     log.info("hitl.enqueue: %d item(s) for %s", len(items), agent)
     return items
 
@@ -58,7 +61,7 @@ def list_pending() -> list[dict[str, Any]]:
         return [i for i in _load_local() if i.get("status") == "pending"]
     from google.cloud import bigquery
 
-    client = bigquery.Client(project=os.environ["GOOGLE_CLOUD_PROJECT"])
+    client = bigquery.Client(project=get_settings().project)
     rows = client.query(
         f"SELECT * FROM `{client.project}`.ops.review_queue WHERE status='pending'"
     ).result()
@@ -72,7 +75,7 @@ def resolve(review_id: str, decision: str, reviewer: str = "unknown") -> dict[st
     item = _update_status(review_id, "confirmed" if decision == "confirm" else "dismissed", reviewer)
     if decision == "confirm" and item:
         send_elie(
-            to=item.get("owner_email", "ops-owner@davita.example"),
+            to=item.get("owner_email") or get_settings().elie_default_recipient,
             subject=f"[Data Quality] {item.get('kind')} needs correction",
             body=f"Reviewer {reviewer} confirmed: {item.get('detail')}",
         )
@@ -96,14 +99,23 @@ def _update_status(review_id: str, status: str, reviewer: str) -> dict[str, Any]
         return found
     from google.cloud import bigquery
 
-    client = bigquery.Client(project=os.environ["GOOGLE_CLOUD_PROJECT"])
+    client = bigquery.Client(project=get_settings().project)
+    params = [bigquery.ScalarQueryParameter("id", "STRING", review_id)]
+    # Fetch the full row first so the caller (e.g. the ELie email) has kind/detail.
+    found = list(client.query(
+        f"SELECT * FROM `{client.project}`.ops.review_queue WHERE review_id=@id",
+        job_config=bigquery.QueryJobConfig(query_parameters=params),
+    ).result())
+    if not found:
+        return None
+    item = dict(found[0])
     client.query(
         f"UPDATE `{client.project}`.ops.review_queue SET status=@s, reviewer=@r "
         f"WHERE review_id=@id",
-        job_config=bigquery.QueryJobConfig(query_parameters=[
+        job_config=bigquery.QueryJobConfig(query_parameters=params + [
             bigquery.ScalarQueryParameter("s", "STRING", status),
             bigquery.ScalarQueryParameter("r", "STRING", reviewer),
-            bigquery.ScalarQueryParameter("id", "STRING", review_id),
         ]),
     ).result()
-    return {"review_id": review_id, "status": status, "reviewer": reviewer}
+    item.update(status=status, reviewer=reviewer)
+    return item

@@ -35,6 +35,45 @@ def check() -> int:
     return 0
 
 
+def _schemas():
+    from google.cloud import bigquery
+
+    S = bigquery.SchemaField
+    # Explicit schemas - do NOT rely on autodetect: all-string CSVs (e.g. CWOW) make
+    # BigQuery mis-name columns (string_field_0...) and silently break reconciliation.
+    return {
+        "mdm_admins": [S("facility_id", "STRING"), S("employee_id", "STRING"),
+                       S("role", "STRING"), S("status", "STRING"), S("effective_date", "DATE")],
+        "workday_employees": [S("employee_id", "STRING"), S("employment_status", "STRING"),
+                              S("term_date", "DATE"), S("transfer_date", "DATE"),
+                              S("current_role", "STRING")],
+        "cwow_assignments": [S("facility_id", "STRING"), S("employee_id", "STRING"),
+                             S("assigned_role", "STRING")],
+    }
+
+
+def _ensure_output_tables(client, project: str) -> None:
+    """Create the write-target tables (idempotent). Mirrors infra/modules/bigquery;
+    lets the online demo run without Terraform installed."""
+    from google.cloud import bigquery
+
+    S = bigquery.SchemaField
+    outputs = {
+        "dq_results.admin_turnover": [S("kind", "STRING"), S("severity", "STRING"),
+            S("employee_id", "STRING"), S("facility_id", "STRING"), S("detail", "STRING"),
+            S("explanation", "STRING"), S("priority", "INTEGER")],
+        "ops.review_queue": [S("review_id", "STRING"), S("agent", "STRING"), S("status", "STRING"),
+            S("created_at", "TIMESTAMP"), S("kind", "STRING"), S("severity", "STRING"),
+            S("employee_id", "STRING"), S("facility_id", "STRING"), S("detail", "STRING"),
+            S("reviewer", "STRING")],
+        "ops.sent_emails": [S("to", "STRING"), S("subject", "STRING"), S("body", "STRING"),
+            S("sent_at", "TIMESTAMP"), S("channel", "STRING")],
+    }
+    for name, schema in outputs.items():
+        client.create_table(bigquery.Table(f"{project}.{name}", schema=schema), exists_ok=True)
+        print(f"  ensured {name}")
+
+
 def load() -> int:  # pragma: no cover - requires GCP
     from google.cloud import bigquery
 
@@ -42,7 +81,9 @@ def load() -> int:  # pragma: no cover - requires GCP
     client = bigquery.Client(project=project)
     for ds in ("bronze", "silver", "gold", "dq_results", "ops"):
         client.create_dataset(bigquery.Dataset(f"{project}.{ds}"), exists_ok=True)
+    _ensure_output_tables(client, project)
 
+    schemas = _schemas()
     for table, filename in FILES.items():
         for ds in ("bronze", "silver"):
             table_id = f"{project}.{ds}.{table}"
@@ -51,7 +92,8 @@ def load() -> int:  # pragma: no cover - requires GCP
                 table_id,
                 job_config=bigquery.LoadJobConfig(
                     source_format=bigquery.SourceFormat.CSV,
-                    skip_leading_rows=1, autodetect=True,
+                    skip_leading_rows=1,
+                    schema=schemas[table],
                     write_disposition="WRITE_TRUNCATE",
                 ),
             )
