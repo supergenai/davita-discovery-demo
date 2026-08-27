@@ -1,0 +1,6 @@
+facility_id,employee_id,assigned_role
+F001,E100,Facility Admin
+F002,E101,Facility Admin
+F003,E102,Facility Admin
+F005,E104,Facility Admin
+F001,E105,Regional Ops Director

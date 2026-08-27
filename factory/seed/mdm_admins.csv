@@ -1,0 +1,7 @@
+facility_id,employee_id,role,status,effective_date
+F001,E100,Facility Admin,Active,2024-01-15
+F002,E101,Facility Admin,Active,2023-02-01
+F003,E102,Regional Ops Director,Active,2022-03-10
+F004,E103,Facility Admin,Active,2024-05-20
+F005,E104,Facility Admin,Active,2023-01-01
+F001,E105,Regional Ops Director,Inactive,2021-06-01
