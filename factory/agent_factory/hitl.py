@@ -31,7 +31,12 @@ def enqueue(agent: str, mismatches: list[Mismatch], min_severity: Severity = Sev
             "agent": agent,
             "status": "pending",
             "created_at": datetime.now(timezone.utc).isoformat(),
-            **m.model_dump(),
+            "kind": m.kind,
+            "severity": m.severity.value,
+            "employee_id": m.employee_id,
+            "facility_id": m.facility_id,
+            "detail": m.detail,
+            "reviewer": None,
         }
         for m in mismatches
         if order[m.severity] >= order[min_severity]
@@ -44,10 +49,9 @@ def enqueue(agent: str, mismatches: list[Mismatch], min_severity: Severity = Sev
         existing.extend(items)
         QUEUE_FILE.write_text(json.dumps(existing, indent=2, default=str))
     else:
-        from google.cloud import bigquery
+        from .sinks import _bq_insert
 
-        client = bigquery.Client(project=get_settings().project)
-        client.insert_rows_json(f"{client.project}.ops.review_queue", items)
+        _bq_insert(f"{get_settings().project}.ops.review_queue", items)
     log.info("hitl.enqueue: %d item(s) for %s", len(items), agent)
     return items
 
@@ -96,13 +100,22 @@ def _update_status(review_id: str, status: str, reviewer: str) -> dict[str, Any]
     from google.cloud import bigquery
 
     client = bigquery.Client(project=get_settings().project)
+    params = [bigquery.ScalarQueryParameter("id", "STRING", review_id)]
+    # Fetch the full row first so the caller (e.g. the ELie email) has kind/detail.
+    found = list(client.query(
+        f"SELECT * FROM `{client.project}`.ops.review_queue WHERE review_id=@id",
+        job_config=bigquery.QueryJobConfig(query_parameters=params),
+    ).result())
+    if not found:
+        return None
+    item = dict(found[0])
     client.query(
         f"UPDATE `{client.project}`.ops.review_queue SET status=@s, reviewer=@r "
         f"WHERE review_id=@id",
-        job_config=bigquery.QueryJobConfig(query_parameters=[
+        job_config=bigquery.QueryJobConfig(query_parameters=params + [
             bigquery.ScalarQueryParameter("s", "STRING", status),
             bigquery.ScalarQueryParameter("r", "STRING", reviewer),
-            bigquery.ScalarQueryParameter("id", "STRING", review_id),
         ]),
     ).result()
-    return {"review_id": review_id, "status": status, "reviewer": reviewer}
+    item.update(status=status, reviewer=reviewer)
+    return item

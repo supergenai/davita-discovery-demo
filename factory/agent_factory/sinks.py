@@ -27,14 +27,19 @@ def _local_append(name: str, rows: list[dict[str, Any]]) -> Path:
 
 
 def _bq_insert(table: str, rows: list[dict[str, Any]]) -> None:
+    """Append rows via a load job (not streaming insertAll): batch DQ writes don't
+    need low latency, and load jobs avoid the streaming-buffer propagation delay on
+    freshly created tables and allow immediate DML."""
     from google.cloud import bigquery
 
     from .settings import get_settings
 
     client = bigquery.Client(project=get_settings().project)
-    errors = client.insert_rows_json(table, rows)
-    if errors:
-        raise RuntimeError(f"BigQuery insert errors for {table}: {errors}")
+    job = client.load_table_from_json(
+        rows, table,
+        job_config=bigquery.LoadJobConfig(write_disposition="WRITE_APPEND"),
+    )
+    job.result()
 
 
 def write_results(table: str, rows: list[dict[str, Any]]) -> str:

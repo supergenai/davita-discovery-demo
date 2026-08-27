@@ -7,7 +7,7 @@ The LLM never runs this - it only explains the output.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 from agent_factory.business_logic import Mismatch, Severity, index_by
 
@@ -15,13 +15,20 @@ STALE_DAYS = 180
 
 
 def _is_terminated(wd: dict) -> bool:
-    return (wd.get("employment_status", "").strip().lower() == "terminated"
+    return (str(wd.get("employment_status", "")).strip().lower() == "terminated"
             or bool(wd.get("term_date")))
 
 
-def _parse(d: str | None) -> date | None:
+def _parse(d) -> date | None:
+    """Accept ISO strings (CSV path) or date/datetime objects (BigQuery path)."""
+    if not d:
+        return None
+    if isinstance(d, datetime):
+        return d.date()
+    if isinstance(d, date):
+        return d
     try:
-        return date.fromisoformat(d) if d else None
+        return date.fromisoformat(str(d))
     except ValueError:
         return None
 
