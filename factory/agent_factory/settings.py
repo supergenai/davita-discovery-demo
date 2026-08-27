@@ -30,6 +30,7 @@ class Settings(BaseModel):
     cloud_logging: bool          # attach Cloud Logging
     time_zone: str               # scheduler tz
     elie_default_recipient: str  # fallback email target for the ELie stub
+    staging_bucket: str | None   # GCS bucket for Agent Engine deploy uploads
 
 
 def get_settings() -> Settings:
@@ -45,4 +46,8 @@ def get_settings() -> Settings:
         cloud_logging=os.getenv("FACTORY_CLOUD_LOGGING") == "1",
         time_zone=os.getenv("FACTORY_TIME_ZONE", "America/Denver"),
         elie_default_recipient=os.getenv("ELIE_DEFAULT_RECIPIENT", "ops-owner@davita.example"),
+        staging_bucket=(
+            os.getenv("FACTORY_STAGING_BUCKET")
+            or (f"gs://{project}-agent-staging" if project else None)
+        ),
     )

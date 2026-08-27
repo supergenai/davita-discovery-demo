@@ -46,7 +46,7 @@ def deploy(config_path: str):  # pragma: no cover - requires GCP
     if s.offline or not s.project:
         raise RuntimeError("deploy needs GOOGLE_CLOUD_PROJECT + GOOGLE_CLOUD_REGION set")
     project, region = s.project, s.region
-    vertexai.init(project=project, location=region)
+    vertexai.init(project=project, location=region, staging_bucket=s.staging_bucket)
 
     app = AdkApp(agent=build_agent(spec), enable_tracing=True)
     remote = agent_engines.create(
@@ -59,7 +59,9 @@ def deploy(config_path: str):  # pragma: no cover - requires GCP
         ],
         extra_packages=["agent_factory", "agents"],  # our source, uploaded to the build
         service_account=s.agent_service_account,  # per-agent SA (Terraform output)
-        env_vars={"GOOGLE_CLOUD_PROJECT": project, "GOOGLE_CLOUD_REGION": region},
+        # NOTE: GOOGLE_CLOUD_PROJECT/REGION are reserved by Agent Engine and injected
+        # automatically, so we only force online mode here.
+        env_vars={"FACTORY_OFFLINE": "0"},
     )
     log.info("deployed '%s' -> %s", spec.name, remote.resource_name)
     return remote
