@@ -1,0 +1,43 @@
+# Recorded business/architecture decisions. The conflict checker flags a proposal when any of a
+# decision's conflict_signals appears in it. conflict_signals are lowercased substrings that
+# indicate a proposal contradicts a decision that is already closed/decided.
+
+- id: BP2-1
+  topic: transport no-show outreach channel
+  status: closed
+  ruling: >
+    Use a hybrid outreach approach (live caller plus SMS). SMS-only is insufficient: Pilot A showed
+    only ~6% reduction, capped by ~22% invalid/landline numbers. The SMS-only spike was closed
+    won't-do.
+  source: executive_brief_transport_no_show
+  tags: [transport, outreach, sms, no-show]
+  conflict_signals:
+    - "sms-only"
+    - "sms only"
+    - "single channel"
+    - "text-only reminder"
+
+- id: DEC-NOSHOW-DEF
+  topic: no-show rate definition
+  status: open
+  ruling: >
+    Exactly one no-show-rate definition must be chosen before any target reporting. The Analytics
+    (18.4%) and Ops Dashboard (24%) definitions are not comparable and must not be mixed.
+  source: no_show_rate
+  tags: [no-show, metric, definition]
+  conflict_signals:
+    - "compare both baselines"
+    - "mix the two"
+    - "24% and 18.4%"
+
+- id: DEC-MDM-SOT
+  topic: employment source of truth
+  status: closed
+  ruling: >
+    Workday is the source of truth for employment status. When MDM/CWOW disagree with Workday,
+    Workday wins and the others are corrected.
+  source: admin_turnover
+  tags: [mdm, workday, turnover, source-of-truth]
+  conflict_signals:
+    - "mdm is the source of truth for employment"
+    - "trust mdm over workday"
