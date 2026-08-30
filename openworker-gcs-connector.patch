@@ -1,0 +1,255 @@
+diff --git a/coworker/connectors/descriptors.py b/coworker/connectors/descriptors.py
+index 9a6a34a..460826a 100644
+--- a/coworker/connectors/descriptors.py
++++ b/coworker/connectors/descriptors.py
+@@ -380,6 +380,36 @@ def _validate_google_drive(creds: dict) -> ValidationResult:
+     )
+ 
+ 
++def _validate_gcs(creds: dict) -> ValidationResult:
++    # GCS has no cheap "whoami"; validate the OAuth token via tokeninfo and confirm
++    # it carries a Cloud Storage scope, so a token that can't read objects fails at
++    # connect time rather than on the first tool call.
++    import httpx
++
++    token = creds.get("access_token", "")
++    try:
++        resp = httpx.get(
++            "https://www.googleapis.com/oauth2/v3/tokeninfo",
++            params={"access_token": token},
++            timeout=15,
++        )
++        data = resp.json()
++    except Exception as exc:
++        return ValidationResult(False, error=str(exc))
++    if resp.status_code >= 400 or not isinstance(data, dict):
++        detail = data.get("error_description") if isinstance(data, dict) else None
++        return ValidationResult(
++            False, error=str(detail or "invalid or expired access token")
++        )
++    scope = str(data.get("scope", ""))
++    if "devstorage" not in scope and "cloud-platform" not in scope:
++        return ValidationResult(
++            False,
++            error="token lacks a Cloud Storage scope (need devstorage.read_only or cloud-platform)",
++        )
++    return ValidationResult(True, identity=str(data.get("email") or data.get("azp") or "GCS token"))
++
++
+ def _validate_docusign(creds: dict) -> ValidationResult:
+     # userinfo also carries accounts[] (account_id + base_uri); the tool layer
+     # re-fetches and caches those on first use, so validation only needs identity.
+@@ -1138,6 +1168,33 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
+         # than by the opaque `sub` that account_field="account_id" would use.
+         account_field="@identity",
+     ),
++    ConnectorDescriptor(
++        name="gcs",
++        title="Google Cloud Storage",
++        icon="◪",
++        blurb="List buckets and read objects (files) in Google Cloud Storage.",
++        auth="oauth",
++        two_way=False,
++        brand_color="#4285f4",
++        logo="gcs",
++        aliases=("gcp", "bucket", "storage", "google cloud", "blob", "object store"),
++        fields=[
++            Field(
++                "access_token",
++                "OAuth access token",
++                secret=True,
++                help="Google OAuth token with the devstorage.read_only scope.",
++            ),
++        ],
++        instructions=[
++            "Grant a Google OAuth token with the Cloud Storage read scope "
++            "(https://www.googleapis.com/auth/devstorage.read_only).",
++            "Fastest path: run `gcloud auth print-access-token` and paste the result below.",
++            "Note: OAuth access tokens expire in ~1 hour — re-paste to refresh.",
++        ],
++        validate=_validate_gcs,
++        available=True,
++    ),
+     ConnectorDescriptor(
+         name="canva",
+         title="Canva",
+diff --git a/coworker/connectors/integration_tools.py b/coworker/connectors/integration_tools.py
+index f0f18d0..f67bfb7 100644
+--- a/coworker/connectors/integration_tools.py
++++ b/coworker/connectors/integration_tools.py
+@@ -4621,6 +4621,123 @@ def make_integration_tools(
+         )
+     )
+ 
++    # --- Google Cloud Storage ----------------------------------------------
++    _GCS = "https://storage.googleapis.com/storage/v1"
++
++    def gcs_list_buckets(project: str, max_results: int = 20) -> dict[str, Any]:
++        profile, err = _profile(secrets, "gcs", "access_token")
++        if err:
++            return err
++        return _request(
++            "GET",
++            f"{_GCS}/b",
++            headers=_google_headers(profile["access_token"]),
++            params={
++                "project": project,
++                "maxResults": _clamp(max_results, default=20, ceiling=50),
++                "fields": "items(name,location,timeCreated),nextPageToken",
++            },
++        )
++
++    gcs_list_buckets.__name__ = "gcs_list_buckets"
++    tools.append(
++        _attach(
++            gcs_list_buckets,
++            _schema(
++                "gcs_list_buckets",
++                "List Cloud Storage buckets in a GCP project.",
++                {
++                    "project": {"type": "string"},
++                    "max_results": {"type": "integer"},
++                },
++                ["project"],
++            ),
++            caps=["gcs", "read"],
++        )
++    )
++
++    def gcs_list_objects(
++        bucket: str, prefix: str = "", max_results: int = 20
++    ) -> dict[str, Any]:
++        profile, err = _profile(secrets, "gcs", "access_token")
++        if err:
++            return err
++        params: dict[str, Any] = {
++            "maxResults": _clamp(max_results, default=20, ceiling=100),
++            "fields": "items(name,size,updated,contentType),prefixes,nextPageToken",
++        }
++        if prefix:
++            params["prefix"] = prefix
++        return _request(
++            "GET",
++            f"{_GCS}/b/{quote(bucket, safe='')}/o",
++            headers=_google_headers(profile["access_token"]),
++            params=params,
++        )
++
++    gcs_list_objects.__name__ = "gcs_list_objects"
++    tools.append(
++        _attach(
++            gcs_list_objects,
++            _schema(
++                "gcs_list_objects",
++                "List objects in a Cloud Storage bucket, optionally filtered by key prefix.",
++                {
++                    "bucket": {"type": "string"},
++                    "prefix": {"type": "string"},
++                    "max_results": {"type": "integer"},
++                },
++                ["bucket"],
++            ),
++            caps=["gcs", "read"],
++        )
++    )
++
++    def gcs_read_object(
++        bucket: str, object_name: str, max_chars: int = 20000
++    ) -> dict[str, Any]:
++        profile, err = _profile(secrets, "gcs", "access_token")
++        if err:
++            return err
++        headers = _google_headers(profile["access_token"])
++        base = f"{_GCS}/b/{quote(bucket, safe='')}/o/{quote(object_name, safe='')}"
++        meta = _request(
++            "GET", base, headers=headers, params={"fields": "name,size,contentType,updated"}
++        )
++        if not meta.get("ok"):
++            return meta
++        info = meta.get("data") or {}
++        body = _request("GET", base, headers=headers, params={"alt": "media"})
++        if not body.get("ok"):
++            return body
++        text = body.get("data")
++        if not isinstance(text, str):
++            text = json.dumps(text)
++        return {
++            "ok": True,
++            "object": info,
++            "content": text[: max(1, int(max_chars))],
++            "truncated": len(text) > max_chars,
++        }
++
++    gcs_read_object.__name__ = "gcs_read_object"
++    tools.append(
++        _attach(
++            gcs_read_object,
++            _schema(
++                "gcs_read_object",
++                "Read a Cloud Storage object as text (binary blobs return best-effort decoded text).",
++                {
++                    "bucket": {"type": "string"},
++                    "object_name": {"type": "string"},
++                    "max_chars": {"type": "integer"},
++                },
++                ["bucket", "object_name"],
++            ),
++            caps=["gcs", "read"],
++        )
++    )
++
+     # --- Docusign -----------------------------------------------------------
+ 
+     def _docusign_ctx(
+diff --git a/coworker/connectors/tool_defs.py b/coworker/connectors/tool_defs.py
+index d8b365e..77138a0 100644
+--- a/coworker/connectors/tool_defs.py
++++ b/coworker/connectors/tool_defs.py
+@@ -1032,6 +1032,27 @@ TOOL_DEFS: tuple[ConnectorToolDef, ...] = (
+         "read",
+         "Read a Drive file as text.",
+     ),
++    ConnectorToolDef(
++        "gcs",
++        "gcs_list_buckets",
++        "List buckets",
++        "read",
++        "List Cloud Storage buckets in a GCP project.",
++    ),
++    ConnectorToolDef(
++        "gcs",
++        "gcs_list_objects",
++        "List objects",
++        "read",
++        "List objects in a Cloud Storage bucket.",
++    ),
++    ConnectorToolDef(
++        "gcs",
++        "gcs_read_object",
++        "Read object",
++        "read",
++        "Read a Cloud Storage object as text.",
++    ),
+     ConnectorToolDef(
+         "docusign",
+         "docusign_list_envelopes",
+diff --git a/surfaces/gui/src/connectors/registry.tsx b/surfaces/gui/src/connectors/registry.tsx
+index 161e37c..c9b7030 100644
+--- a/surfaces/gui/src/connectors/registry.tsx
++++ b/surfaces/gui/src/connectors/registry.tsx
+@@ -27,6 +27,7 @@ import {
+   siGitlab,
+   siGmail,
+   siGooglecalendar,
++  siGooglecloudstorage,
+   siGoogledrive,
+   siHubspot,
+   siJira,
+@@ -205,6 +206,7 @@ export const CONNECTORS: Record<string, ConnectorRegistryEntry> = {
+   gmail: brand(siGmail),
+   google_calendar: brand(siGooglecalendar),
+   google_drive: brand(siGoogledrive),
++  gcs: brand(siGooglecloudstorage),
+   hubspot: brand(siHubspot),
+   jira: brand(siJira),
+   linear: brand(siLinear),

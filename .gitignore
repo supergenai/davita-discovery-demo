@@ -3,3 +3,10 @@
 openworker/
 briefs/
 *.log
+
+# secrets & local cruft (never commit)
+env_backup.md
+*_backup.md
+.DS_Store
+~$*
+*.docx
