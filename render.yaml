@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: kidney-care-survey
+    runtime: python
+    buildCommand: echo "no build needed"
+    startCommand: python twilio/survey_server.py
+    plan: free
