@@ -1,0 +1,647 @@
+<title>Antibiotic Gate</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F6F7F4; --surface:#FFFFFF; --surface-2:#EDF0EB; --raise:#FAFBF9;
+  --ink:#16211F; --ink-2:#4E5B58; --ink-3:#78847F;
+  --rule:#DBE0D9; --rule-2:#C7CEC4;
+  --accent:#0F5E52; --accent-soft:#E2EEEA;
+  --deny:#A32B1F; --escalate:#A6690F; --approve:#1B7048;
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1513; --surface:#161E1B; --surface-2:#1C2522; --raise:#1A2320;
+    --ink:#E7ECE8; --ink-2:#A5B1AC; --ink-3:#7C8884;
+    --rule:#2A342F; --rule-2:#3A453F;
+    --accent:#57C3AB; --accent-soft:#16302A;
+    --deny:#E8776A; --escalate:#D8A44F; --approve:#5FC08D;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1513; --surface:#161E1B; --surface-2:#1C2522; --raise:#1A2320;
+  --ink:#E7ECE8; --ink-2:#A5B1AC; --ink-3:#7C8884;
+  --rule:#2A342F; --rule-2:#3A453F;
+  --accent:#57C3AB; --accent-soft:#16302A;
+  --deny:#E8776A; --escalate:#D8A44F; --approve:#5FC08D;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font:400 15px/1.62 "IBM Plex Sans",-apple-system,Segoe UI,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+main{max-width:1060px; margin:0 auto; padding:44px 26px 80px}
+.col{max-width:70ch}
+h1,h2,h3{font-family:Newsreader,Georgia,serif; font-weight:600; text-wrap:balance; margin:0}
+h1{font-size:41px; line-height:1.12; letter-spacing:-.012em}
+h2{font-size:24px; line-height:1.2; margin:0 0 2px}
+h3{font-size:16.5px; font-family:"IBM Plex Sans",sans-serif; font-weight:600; margin:0 0 6px}
+p{margin:0 0 12px}
+.col p:last-child{margin-bottom:0}
+.eyebrow{
+  font-size:11px; font-weight:600; letter-spacing:.13em; color:var(--accent);
+  text-transform:uppercase; margin:0 0 10px;
+}
+.lede{font-size:17px; color:var(--ink-2); line-height:1.55; max-width:76ch}
+code,kbd{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.885em}
+code{color:var(--accent); background:var(--accent-soft); padding:1px 4px; border-radius:3px}
+
+/* header protocol block */
+header{border-bottom:2px solid var(--ink); padding-bottom:22px; margin-bottom:30px}
+.meta{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:0; margin-top:26px; border-top:1px solid var(--rule);
+}
+.meta div{padding:11px 14px 11px 0; border-right:1px solid var(--rule)}
+.meta div:last-child{border-right:0}
+.meta dt{font-size:10.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin:0 0 3px}
+.meta dd{margin:0; font-size:13.5px; font-weight:500; overflow-wrap:anywhere}
+.meta dd.mono{font-family:"IBM Plex Mono",monospace; font-size:12.5px}
+
+section{margin-top:38px}
+section > .head{display:flex; align-items:baseline; gap:12px; margin-bottom:14px; border-bottom:1px solid var(--rule); padding-bottom:8px}
+section > .head .n{
+  font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:500;
+  color:var(--ink-3); padding-top:4px;
+}
+
+/* figures */
+figure{margin:22px 0 0; padding:0}
+figure svg{display:block; width:100%; height:auto; color:var(--ink-2)}
+.frame{background:var(--raise); border:1px solid var(--rule); border-radius:4px; padding:18px 20px; overflow-x:auto}
+figcaption{margin-top:11px; font-size:12.5px; color:var(--ink-2); line-height:1.5; max-width:78ch}
+figcaption b{color:var(--ink); font-weight:600}
+
+/* svg classes */
+.nb{fill:var(--surface); stroke:var(--rule-2); stroke-width:1.2}
+.nb2{fill:var(--surface-2); stroke:var(--rule-2); stroke-width:1.2}
+.nba{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.4}
+.t1{fill:var(--ink); font:500 13px "IBM Plex Sans",sans-serif}
+.t1s{fill:var(--ink); font:500 12px "IBM Plex Sans",sans-serif}
+.t2{fill:var(--ink-2); font:400 11px "IBM Plex Sans",sans-serif}
+.tm{fill:var(--ink-2); font:400 11px "IBM Plex Mono",monospace}
+.tmb{fill:var(--ink); font:500 12px "IBM Plex Mono",monospace}
+.tl{fill:var(--ink-3); font:600 10.5px "IBM Plex Sans",sans-serif; letter-spacing:.09em}
+.ln{stroke:var(--ink-3); stroke-width:1.2; fill:none}
+.lnd{stroke:var(--accent); stroke-width:1.3; fill:none; stroke-dasharray:5 4}
+.ah{fill:var(--ink-3)}
+.aha{fill:var(--accent)}
+.s-deny{fill:var(--deny)}
+.s-esc{fill:var(--escalate)}
+.s-ok{fill:var(--approve)}
+.jn{fill:var(--ink-3)}
+
+/* tables */
+.tw{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:13px; min-width:560px}
+th,td{text-align:left; padding:8px 13px; border-bottom:1px solid var(--rule); vertical-align:top}
+thead th{
+  font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); background:var(--surface-2); white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-family:"IBM Plex Mono",monospace; font-size:12px}
+td.num{font-variant-numeric:tabular-nums; white-space:nowrap}
+.gate-hard{color:var(--deny); font-weight:600}
+.gate-soft{color:var(--escalate); font-weight:600}
+.gate-ops{color:var(--ink-3); font-weight:600}
+
+pre{
+  margin:18px 0 0; padding:15px 17px; background:var(--surface); border:1px solid var(--rule);
+  border-left:3px solid var(--accent); border-radius:4px; overflow-x:auto;
+  font-family:"IBM Plex Mono",monospace; font-size:12.2px; line-height:1.62; color:var(--ink);
+}
+pre .c{color:var(--ink-3)}
+pre .k{color:var(--accent)}
+
+ul{margin:0 0 12px; padding-left:19px}
+li{margin-bottom:5px}
+li::marker{color:var(--ink-3)}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:26px}
+@media (max-width:760px){ .two{grid-template-columns:1fr} h1{font-size:32px} main{padding:30px 18px 60px} }
+footer{margin-top:44px; padding-top:16px; border-top:1px solid var(--rule); font-size:12px; color:var(--ink-3)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+
+<main>
+<header>
+  <p class="eyebrow">Implementation plan &middot; agent factory spoke</p>
+  <h1>Antibiotic Gate: a measurable ADK decision-tree agent</h1>
+  <p class="lede">A trigger wakes the agent, it walks a versioned clinical decision tree over one
+  antibiotic order, and it pushes a determination with its full reasoning path to a review UI where a
+  pharmacist approves or denies. Every one of those human decisions is a label, so accuracy is
+  measured on every run — not once at demo time.</p>
+  <dl class="meta">
+    <div><dt>Spoke</dt><dd class="mono">agents/antibiotic_gate</dd></div>
+    <div><dt>Chassis</dt><dd>Existing <code>agent_factory</code> hub</dd></div>
+    <div><dt>Autonomy</dt><dd>L2 — human authorizes</dd></div>
+    <div><dt>Timebox</dt><dd>10 working days, 1 dev</dd></div>
+    <div><dt>Branch</dt><dd class="mono">claude/adk-agent-poc-&hellip;</dd></div>
+    <div><dt>Data</dt><dd>Synthetic only, no PHI</dd></div>
+  </dl>
+</header>
+
+<section>
+  <div class="head"><span class="n">01</span><h2>The one design rule</h2></div>
+  <div class="col">
+  <p><b>The tree decides; Gemini only explains.</b> Traversal is deterministic Python over a
+  <code>tree.yaml</code> a clinician can read and diff. The LLM receives an already-decided
+  determination and writes the reviewer-facing rationale. That split is what makes this POC
+  measurable at all: the decision is reproducible bit-for-bit, so a change in accuracy is always
+  attributable to a tree version, a data change, or a prompt version — never to sampling noise.</p>
+  <p>It also matches the chassis we already have. <code>rules.py</code> proved the deterministic-core
+  pattern for reconciliation; a decision tree is the same socket with an ordered graph and a trace
+  instead of a flat rule list.</p>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="n">02</span><h2>Runtime architecture</h2></div>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 980 492" role="img" aria-label="Trigger wakes the antibiotic_gate spoke, which retrieves patient facts from BigQuery, traverses the decision tree, has Gemini explain the result, writes an audit row and queues the order for human review; reviewer decisions feed an eval score table that drives tree and prompt tuning.">
+      <defs>
+        <marker id="f1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path class="ah" d="M0 0 L10 5 L0 10 z"/>
+        </marker>
+        <marker id="f1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path class="aha" d="M0 0 L10 5 L0 10 z"/>
+        </marker>
+      </defs>
+
+      <!-- trigger -->
+      <rect class="nb" x="16" y="52" width="140" height="76" rx="5"/>
+      <text class="t1s" x="30" y="76">Trigger</text>
+      <text class="tm" x="30" y="94">*/15 * * * *</text>
+      <text class="t2" x="30" y="114">Scheduler or POST /run</text>
+      <line class="ln" x1="156" y1="90" x2="200" y2="90" marker-end="url(#f1a)"/>
+
+      <!-- agent container -->
+      <rect class="nb2" x="192" y="30" width="280" height="320" rx="7"/>
+      <text class="tl" x="206" y="50">AGENT ENGINE · antibiotic_gate</text>
+
+      <rect class="nb" x="208" y="62" width="248" height="56" rx="4"/>
+      <text class="t1s" x="222" y="84">1 · Retrieve patient facts</text>
+      <text class="tm" x="222" y="102">patient_facts.assemble()</text>
+
+      <rect class="nba" x="208" y="130" width="248" height="56" rx="4"/>
+      <text class="t1s" x="222" y="152">2 · Traverse decision tree</text>
+      <text class="tm" x="222" y="170">tree.traverse() → node_path</text>
+
+      <rect class="nb" x="208" y="198" width="248" height="56" rx="4"/>
+      <text class="t1s" x="222" y="220">3 · Explain, never decide</text>
+      <text class="tm" x="222" y="238">enrich.explain() · prompt v1.2</text>
+
+      <rect class="nb" x="208" y="266" width="248" height="56" rx="4"/>
+      <text class="t1s" x="222" y="288">4 · Emit + enqueue</text>
+      <text class="tm" x="222" y="306">sinks.write · hitl.enqueue</text>
+
+      <!-- sources -->
+      <rect class="nb" x="192" y="396" width="280" height="58" rx="5"/>
+      <text class="tmb" x="206" y="420">silver.* + ref.*</text>
+      <text class="t2" x="206" y="438">8 tables · one query per source</text>
+      <line class="ln" x1="332" y1="394" x2="332" y2="356" marker-end="url(#f1a)"/>
+      <text class="t2" x="340" y="378">reads</text>
+
+      <!-- outputs -->
+      <line class="ln" x1="472" y1="294" x2="490" y2="294"/>
+      <polyline class="ln" points="490,294 490,236 504,236" marker-end="url(#f1a)"/>
+      <polyline class="ln" points="490,294 490,316 504,316" marker-end="url(#f1a)"/>
+
+      <rect class="nb" x="508" y="204" width="240" height="64" rx="5"/>
+      <text class="tmb" x="522" y="228">antibiotic_determinations</text>
+      <text class="t2" x="522" y="246">decision · reason_code · node_path</text>
+      <text class="t2" x="522" y="260">tree_version · prompt_version · cost</text>
+
+      <rect class="nb" x="508" y="284" width="240" height="64" rx="5"/>
+      <text class="tmb" x="522" y="308">ops.review_queue</text>
+      <text class="t2" x="522" y="326">every order — L2, nothing</text>
+      <text class="t2" x="522" y="340">is dispensed by the agent</text>
+
+      <!-- HITL -->
+      <line class="ln" x1="748" y1="316" x2="792" y2="316" marker-end="url(#f1a)"/>
+      <text class="t2" x="770" y="308" text-anchor="middle">renders</text>
+      <rect class="nba" x="800" y="253" width="164" height="126" rx="5"/>
+      <text class="t1s" x="814" y="277">Review UI</text>
+      <text class="t2" x="814" y="295">Cloud Run · FastAPI</text>
+      <text class="t2" x="814" y="319">Patient card, path taken,</text>
+      <text class="t2" x="814" y="333">cited rules</text>
+      <text class="tmb" x="814" y="357">APPROVE / DENY</text>
+      <text class="t2" x="814" y="371">+ reason code</text>
+
+      <!-- accuracy loop -->
+      <polyline class="lnd" points="882,379 882,425 734,425" marker-end="url(#f1b)"/>
+      <text class="t2" x="876" y="415" text-anchor="end">reviewer decision = label</text>
+      <rect class="nb" x="520" y="396" width="210" height="58" rx="5"/>
+      <text class="tmb" x="534" y="420">eval.run_scores</text>
+      <text class="t2" x="534" y="438">agreement · override mix</text>
+      <polyline class="lnd" points="520,425 496,425 496,478 180,478 180,160 204,160" marker-end="url(#f1b)"/>
+      <text class="t2" x="338" y="470" text-anchor="middle">tune tree.yaml · bump prompt version</text>
+    </svg>
+    </div>
+    <figcaption><b>One order, end to end.</b> Only stage 2 decides, and it is the same code the
+    offline eval exercises. The two dashed edges are the reason this is a POC about accuracy rather
+    than a demo: the reviewer's approve/deny becomes a label, and the score table is what justifies
+    the next edit to <code>tree.yaml</code> or the prompt.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="head"><span class="n">03</span><h2>The decision tree and its business rules</h2></div>
+  <div class="col">
+  <p>Eleven decision nodes, four outcome types, one reason code per leaf. Ordering is deliberate:
+  documentation and sepsis are checked before anything drug-specific, absolute contraindications
+  before dose refinements. Flags do not terminate — they accumulate on the trace and force the
+  T80 roll-up to escalate.</p>
+  </div>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 900 812" role="img" aria-label="Eleven-node antibiotic order decision tree from indication check through sepsis screen, allergy, susceptibility, pregnancy, renal function, interactions and duration, ending in a roll-up node that either escalates to pharmacist review or recommends approval.">
+      <defs>
+        <marker id="f2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path class="ah" d="M0 0 L10 5 L0 10 z"/>
+        </marker>
+      </defs>
+
+      <!-- spine nodes -->
+      <rect class="nb" x="176" y="24" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="44">T00 — Indication + drug coded</text>
+      <text class="tm" x="190" y="60">orders.indication_code</text>
+
+      <rect class="nb" x="176" y="86" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="106">T10 — Sepsis screen ≥ 2 of 5</text>
+      <text class="tm" x="190" y="122">temp · HR · RR · SBP · lactate</text>
+
+      <rect class="nb" x="176" y="148" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="168">T20 — Allergy to ordered class</text>
+      <text class="tm" x="190" y="184">allergies.allergen_class</text>
+
+      <rect class="nb" x="176" y="210" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="230">T21 — Anaphylaxis or SJS</text>
+      <text class="tm" x="190" y="246">allergies.reaction_severity</text>
+
+      <rect class="nb" x="176" y="318" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="338">T30 — Susceptibility on file</text>
+      <text class="tm" x="190" y="354">labs.organism, interpretation</text>
+
+      <rect class="nb" x="176" y="380" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="400">T31 — Ordered drug is S</text>
+      <text class="tm" x="190" y="416">interpretation = S | I | R</text>
+
+      <rect class="nb" x="176" y="442" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="462">T40 — Pregnancy restriction</text>
+      <text class="tm" x="190" y="478">pregnancy_status · formulary</text>
+
+      <rect class="nb" x="176" y="504" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="524">T50 — eGFR &lt; 30, needs adjust</text>
+      <text class="tm" x="190" y="540">labs.egfr · renal threshold</text>
+
+      <rect class="nb" x="176" y="566" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="586">T60 — Major interaction</text>
+      <text class="tm" x="190" y="602">medications × interaction_pairs</text>
+
+      <rect class="nb" x="176" y="628" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="648">T70 — Duration ≤ formulary max</text>
+      <text class="tm" x="190" y="664">orders.duration_days</text>
+
+      <rect class="nba" x="176" y="690" width="250" height="44" rx="4"/>
+      <text class="t1s" x="190" y="710">T80 — Roll up flags + spectrum</text>
+      <text class="tm" x="190" y="726">trace flags · restricted class</text>
+
+      <!-- spine connectors -->
+      <line class="ln" x1="301" y1="68" x2="301" y2="82" marker-end="url(#f2a)"/>
+      <line class="ln" x1="301" y1="130" x2="301" y2="144" marker-end="url(#f2a)"/>
+      <line class="ln" x1="301" y1="192" x2="301" y2="206" marker-end="url(#f2a)"/>
+      <line class="ln" x1="301" y1="254" x2="301" y2="314" marker-end="url(#f2a)"/>
+      <line class="ln" x1="301" y1="362" x2="301" y2="376" marker-end="url(#f2a)"/>
+      <line class="ln" x1="301" y1="424" x2="301" y2="438" marker-end="url(#f2a)"/>
+      <line class="ln" x1="301" y1="486" x2="301" y2="500" marker-end="url(#f2a)"/>
+      <line class="ln" x1="301" y1="548" x2="301" y2="562" marker-end="url(#f2a)"/>
+      <line class="ln" x1="301" y1="610" x2="301" y2="624" marker-end="url(#f2a)"/>
+      <line class="ln" x1="301" y1="672" x2="301" y2="686" marker-end="url(#f2a)"/>
+
+      <!-- bypasses -->
+      <polyline class="ln" points="176,170 150,170 150,340 172,340" marker-end="url(#f2a)"/>
+      <text class="t2" x="144" y="258" text-anchor="end">no</text>
+      <polyline class="ln" points="176,340 136,340 136,464 172,464" marker-end="url(#f2a)"/>
+      <text class="t2" x="130" y="410" text-anchor="end">no · empiric</text>
+
+      <!-- leaves -->
+      <line class="ln" x1="426" y1="46" x2="496" y2="46" marker-end="url(#f2a)"/>
+      <text class="t2" x="461" y="40" text-anchor="middle">no</text>
+      <rect class="nb" x="500" y="27" width="384" height="38" rx="4"/>
+      <rect class="s-deny" x="500" y="27" width="4" height="38"/>
+      <text class="t1s" x="516" y="51">DENY · MISSING_INDICATION</text>
+
+      <line class="ln" x1="426" y1="108" x2="496" y2="108" marker-end="url(#f2a)"/>
+      <text class="t2" x="461" y="102" text-anchor="middle">yes</text>
+      <rect class="nb" x="500" y="89" width="384" height="38" rx="4"/>
+      <rect class="s-esc" x="500" y="89" width="4" height="38"/>
+      <text class="t1s" x="516" y="113">ESCALATE · SEPSIS_PATHWAY — urgent queue</text>
+
+      <line class="ln" x1="426" y1="232" x2="496" y2="232" marker-end="url(#f2a)"/>
+      <text class="t2" x="461" y="226" text-anchor="middle">yes</text>
+      <rect class="nb" x="500" y="213" width="384" height="38" rx="4"/>
+      <rect class="s-deny" x="500" y="213" width="4" height="38"/>
+      <text class="t1s" x="516" y="237">DENY · ALLERGY_ABSOLUTE — offer alternative class</text>
+
+      <circle class="jn" cx="301" cy="275" r="3"/>
+      <line class="ln" x1="301" y1="275" x2="496" y2="275" marker-end="url(#f2a)"/>
+      <text class="t2" x="400" y="269" text-anchor="middle">no · tolerable</text>
+      <rect class="nb" x="500" y="256" width="384" height="38" rx="4"/>
+      <rect class="s-esc" x="500" y="256" width="4" height="38"/>
+      <text class="t1s" x="516" y="280">FLAG · ALLERGY_TOLERABLE — traversal continues</text>
+
+      <line class="ln" x1="426" y1="402" x2="496" y2="402" marker-end="url(#f2a)"/>
+      <text class="t2" x="461" y="396" text-anchor="middle">R / I</text>
+      <rect class="nb" x="500" y="383" width="384" height="38" rx="4"/>
+      <rect class="s-deny" x="500" y="383" width="4" height="38"/>
+      <text class="t1s" x="516" y="407">DENY · NOT_SUSCEPTIBLE — name the S agent</text>
+
+      <line class="ln" x1="426" y1="464" x2="496" y2="464" marker-end="url(#f2a)"/>
+      <text class="t2" x="461" y="458" text-anchor="middle">yes</text>
+      <rect class="nb" x="500" y="445" width="384" height="38" rx="4"/>
+      <rect class="s-deny" x="500" y="445" width="4" height="38"/>
+      <text class="t1s" x="516" y="469">DENY · PREGNANCY_RESTRICTED</text>
+
+      <line class="ln" x1="426" y1="526" x2="496" y2="526" marker-end="url(#f2a)"/>
+      <text class="t2" x="461" y="520" text-anchor="middle">yes</text>
+      <rect class="nb" x="500" y="507" width="384" height="38" rx="4"/>
+      <rect class="s-esc" x="500" y="507" width="4" height="38"/>
+      <text class="t1s" x="516" y="531">FLAG · RENAL_DOSE_ADJUST — traversal continues</text>
+
+      <line class="ln" x1="426" y1="588" x2="496" y2="588" marker-end="url(#f2a)"/>
+      <text class="t2" x="461" y="582" text-anchor="middle">yes</text>
+      <rect class="nb" x="500" y="569" width="384" height="38" rx="4"/>
+      <rect class="s-esc" x="500" y="569" width="4" height="38"/>
+      <text class="t1s" x="516" y="593">FLAG · MAJOR_INTERACTION — traversal continues</text>
+
+      <line class="ln" x1="426" y1="650" x2="496" y2="650" marker-end="url(#f2a)"/>
+      <text class="t2" x="461" y="644" text-anchor="middle">no</text>
+      <rect class="nb" x="500" y="631" width="384" height="38" rx="4"/>
+      <rect class="s-esc" x="500" y="631" width="4" height="38"/>
+      <text class="t1s" x="516" y="655">FLAG · DURATION_EXCEEDS — traversal continues</text>
+
+      <line class="ln" x1="426" y1="712" x2="496" y2="712" marker-end="url(#f2a)"/>
+      <text class="t2" x="461" y="706" text-anchor="middle">any flag</text>
+      <rect class="nb" x="500" y="693" width="384" height="38" rx="4"/>
+      <rect class="s-esc" x="500" y="693" width="4" height="38"/>
+      <text class="t1s" x="516" y="717">ESCALATE · PHARMACIST_REVIEW</text>
+
+      <polyline class="ln" points="301,734 301,777 496,777" marker-end="url(#f2a)"/>
+      <text class="t2" x="400" y="771" text-anchor="middle">clean</text>
+      <rect class="nb" x="500" y="758" width="384" height="38" rx="4"/>
+      <rect class="s-ok" x="500" y="758" width="4" height="38"/>
+      <text class="t1s" x="516" y="782">RECOMMEND_APPROVE · MEETS_CRITERIA</text>
+    </svg>
+    </div>
+    <figcaption><b>The rules, as the agent will actually walk them.</b> Red leaves deny, amber
+    escalate or flag, green recommends approval. Note the leaf wording: even
+    <code>RECOMMEND_APPROVE</code> is a recommendation — at L2 all four outcomes land in the review
+    queue, which is also how we harvest a complete label stream during the POC.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="head"><span class="n">04</span><h2>Datasets</h2></div>
+  <div class="col">
+  <p>All synthetic, generated by one seeded script so the fixture is reproducible. Small on purpose:
+  400 patients and 500 orders exercise every branch without making the eval slow. Roughly a dozen
+  rows are deliberately hard — a mild-rash penicillin history where a cephalosporin is reasonable,
+  eGFR at 29 and 31, a culture reported R with the drug ordered anyway, nitrofurantoin at 38 weeks.</p>
+  </div>
+  <div class="tw" style="margin-top:16px">
+  <table>
+    <thead><tr><th class="mono">table</th><th>key columns</th><th class="num">rows</th><th>feeds</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">silver.patients</td><td>patient_id, birth_date, sex, weight_kg, pregnancy_status, immunocompromised</td><td class="num">400</td><td>T40</td></tr>
+      <tr><td class="mono">silver.allergies</td><td>patient_id, allergen_class, reaction_severity, recorded_date</td><td class="num">180</td><td>T20, T21</td></tr>
+      <tr><td class="mono">silver.medications</td><td>patient_id, drug_name, atc_class, active</td><td class="num">600</td><td>T60</td></tr>
+      <tr><td class="mono">silver.encounters</td><td>encounter_id, patient_id, admit_ts, setting, indication_code</td><td class="num">500</td><td>T00</td></tr>
+      <tr><td class="mono">silver.vitals</td><td>encounter_id, measured_ts, temp_c, hr, rr, sbp</td><td class="num">1,500</td><td>T10</td></tr>
+      <tr><td class="mono">silver.labs</td><td>encounter_id, test_code, value_num, organism, antibiotic, interpretation</td><td class="num">2,000</td><td>T10, T30, T31, T50</td></tr>
+      <tr><td class="mono">silver.antibiotic_orders</td><td>order_id, encounter_id, drug_name, atc_class, dose_mg, route, duration_days, ordered_ts, status</td><td class="num">500</td><td>trigger input</td></tr>
+      <tr><td class="mono">ref.antibiotic_formulary</td><td>drug_name, atc_class, spectrum, renal_adjust_egfr, pregnancy_restriction, max_duration_days, alternatives</td><td class="num">60</td><td>T40, T50, T70, T80</td></tr>
+      <tr><td class="mono">ref.interaction_pairs</td><td>atc_class_a, drug_b, severity, mechanism</td><td class="num">40</td><td>T60</td></tr>
+      <tr><td class="mono">eval.golden_cases</td><td>case_id, order_id, expected_decision, expected_reason_code, expected_node_path, tier, labeled_by</td><td class="num">150</td><td>Loop A</td></tr>
+      <tr><td class="mono">dq_results.antibiotic_determinations</td><td>run_id, order_id, decision, reason_code, node_path, tree_version, prompt_version, explanation, latency_ms, tokens</td><td class="num">append</td><td>audit, Loop B</td></tr>
+      <tr><td class="mono">ops.review_queue</td><td>review_id, order_id, status, reviewer, reviewer_role, decision, override_reason_code, note, decided_ts</td><td class="num">append</td><td>Loop B labels</td></tr>
+      <tr><td class="mono">ops.agent_runs</td><td>run_id, trigger_kind, spec_hash, tree_version, prompt_version, orders_in, errors, duration_ms, cost_usd</td><td class="num">append</td><td>ops metrics</td></tr>
+      <tr><td class="mono">eval.run_scores</td><td>eval_run_id, ts, tree_version, prompt_version, metric, value, n, gate_status</td><td class="num">append</td><td>scorecard</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="margin-top:12px; font-size:12.5px; color:var(--ink-2)">Golden-set composition: 60 approve, 40 deny,
+  30 escalate, 20 flag-then-approve. Each case is labeled once by a pharmacist reviewer and carries
+  its expected node path, not just its expected answer.</p>
+</section>
+
+<section>
+  <div class="head"><span class="n">05</span><h2>How accuracy gets measured continuously</h2></div>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 960 352" role="img" aria-label="Two measurement loops: an offline loop runs 150 golden cases through the tree on every pull request and blocks the merge on a gate failure; an online loop joins live determinations to reviewer decisions to track agreement and drift, and each reviewer override becomes a new golden case.">
+      <defs>
+        <marker id="f3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path class="ah" d="M0 0 L10 5 L0 10 z"/>
+        </marker>
+        <marker id="f3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path class="aha" d="M0 0 L10 5 L0 10 z"/>
+        </marker>
+      </defs>
+
+      <text class="tl" x="24" y="38">LOOP A — OFFLINE · EVERY PR + NIGHTLY</text>
+      <rect class="nb" x="24" y="52" width="170" height="58" rx="5"/>
+      <text class="tmb" x="38" y="76">eval.golden_cases</text>
+      <text class="t2" x="38" y="94">150 labeled cases</text>
+      <line class="ln" x1="194" y1="81" x2="230" y2="81" marker-end="url(#f3a)"/>
+      <rect class="nba" x="234" y="52" width="170" height="58" rx="5"/>
+      <text class="tmb" x="248" y="76">tree.traverse()</text>
+      <text class="t2" x="248" y="94">same code as production</text>
+      <line class="ln" x1="404" y1="81" x2="440" y2="81" marker-end="url(#f3a)"/>
+      <rect class="nb" x="444" y="52" width="150" height="58" rx="5"/>
+      <text class="tmb" x="458" y="76">metrics.py</text>
+      <text class="t2" x="458" y="94">6 offline metrics</text>
+      <line class="ln" x1="594" y1="81" x2="630" y2="81" marker-end="url(#f3a)"/>
+      <rect class="nb" x="634" y="52" width="120" height="58" rx="5"/>
+      <text class="tmb" x="648" y="76">gates.py</text>
+      <text class="t2" x="648" y="94">hard + soft</text>
+      <polyline class="ln" points="754,81 774,81 774,60 790,60" marker-end="url(#f3a)"/>
+      <polyline class="ln" points="754,81 774,81 774,118 790,118" marker-end="url(#f3a)"/>
+      <rect class="nb" x="794" y="40" width="142" height="40" rx="4"/>
+      <rect class="s-ok" x="794" y="40" width="4" height="40"/>
+      <text class="t1s" x="810" y="65">pass → merge</text>
+      <rect class="nb" x="794" y="98" width="142" height="40" rx="4"/>
+      <rect class="s-deny" x="794" y="98" width="4" height="40"/>
+      <text class="t1s" x="810" y="123">fail → block PR</text>
+      <text class="tm" x="24" y="158">safety recall 1.00 · decision accuracy ≥ .95 · path fidelity ≥ .90 · faithfulness 1.00</text>
+
+      <polyline class="lnd" points="469,240 469,196 12,196 12,81 20,81" marker-end="url(#f3b)"/>
+      <text class="t2" x="241" y="190" text-anchor="middle">every override becomes a new golden case</text>
+
+      <text class="tl" x="24" y="228">LOOP B — ONLINE · CONTINUOUS</text>
+      <rect class="nb" x="24" y="244" width="170" height="58" rx="5"/>
+      <text class="tmb" x="38" y="268">live orders</text>
+      <text class="t2" x="38" y="286">every 15 minutes</text>
+      <line class="ln" x1="194" y1="273" x2="230" y2="273" marker-end="url(#f3a)"/>
+      <rect class="nb" x="234" y="244" width="170" height="58" rx="5"/>
+      <text class="tmb" x="248" y="268">determinations</text>
+      <text class="t2" x="248" y="286">decision + node_path</text>
+      <line class="ln" x1="404" y1="273" x2="440" y2="273" marker-end="url(#f3a)"/>
+      <rect class="nba" x="444" y="244" width="150" height="58" rx="5"/>
+      <text class="tmb" x="458" y="268">human decision</text>
+      <text class="t2" x="458" y="286">approve / deny + code</text>
+      <line class="ln" x1="594" y1="273" x2="630" y2="273" marker-end="url(#f3a)"/>
+      <rect class="nb" x="634" y="244" width="120" height="58" rx="5"/>
+      <text class="tmb" x="648" y="268">join</text>
+      <text class="t2" x="648" y="286">on order_id</text>
+      <line class="ln" x1="754" y1="273" x2="790" y2="273" marker-end="url(#f3a)"/>
+      <rect class="nb" x="794" y="244" width="142" height="58" rx="5"/>
+      <text class="tmb" x="808" y="268">scorecard</text>
+      <text class="t2" x="808" y="286">agreement · drift</text>
+      <text class="tm" x="24" y="336">HITL agreement ≥ .90 rolling 7d · override concentration · time-to-decision p95</text>
+    </svg>
+    </div>
+    <figcaption><b>Two loops, one feedback edge.</b> Loop A is a regression gate that can block a
+    merge; Loop B is a live agreement monitor. The dashed edge is what makes measurement continuous
+    instead of two disconnected reports — a reviewer override is promoted into the golden set, so the
+    disagreement that happened once in production cannot recur silently.</figcaption>
+  </figure>
+
+  <div class="tw" style="margin-top:22px">
+  <table>
+    <thead><tr><th>metric</th><th>definition</th><th>source</th><th class="num">target</th><th>gate</th></tr></thead>
+    <tbody>
+      <tr><td>Safety recall</td><td>Share of gold DENY + ESCALATE cases the agent did not recommend approving</td><td>Loop A</td><td class="num">1.00</td><td class="gate-hard">hard — build fails below 1.00</td></tr>
+      <tr><td>Decision accuracy</td><td>Exact match on the four-way outcome</td><td>Loop A</td><td class="num">≥ 0.95</td><td class="gate-hard">hard — fails below baseline − 0.02</td></tr>
+      <tr><td>Reason-code accuracy</td><td>Decision <em>and</em> reason code match</td><td>Loop A</td><td class="num">≥ 0.90</td><td class="gate-soft">soft — warn on PR</td></tr>
+      <tr><td>Path fidelity</td><td>Traversed <code>node_path</code> equals the expected path — catches right answer, wrong reason</td><td>Loop A</td><td class="num">≥ 0.90</td><td class="gate-soft">soft — warn on PR</td></tr>
+      <tr><td>False-deny rate</td><td>Gold APPROVE cases the agent denied or escalated; the alert-fatigue cost</td><td>Loop A</td><td class="num">≤ 0.05</td><td class="gate-soft">soft — warn on PR</td></tr>
+      <tr><td>Explanation faithfulness</td><td>Rule ids cited by Gemini are a subset of the ids actually traversed, and it adds no new clinical claim</td><td>Loop A + 20-case spot check</td><td class="num">1.00</td><td class="gate-hard">hard on the subset check</td></tr>
+      <tr><td>HITL agreement</td><td>Reviewer decision equals the agent's recommendation, 7-day rolling</td><td>Loop B</td><td class="num">≥ 0.90</td><td class="gate-soft">alert below target</td></tr>
+      <tr><td>Override concentration</td><td>Share of overrides traceable to a single reason code</td><td>Loop B</td><td class="num">&lt; 0.40</td><td class="gate-soft">triage — above it, that rule is wrong</td></tr>
+      <tr><td>Time to decision</td><td>Enqueue → reviewer decision, p50 / p95</td><td>Loop B</td><td class="num">p95 &lt; 4h</td><td class="gate-ops">ops</td></tr>
+      <tr><td>Cost and latency</td><td>USD per order, p95 run duration</td><td class="mono">ops.agent_runs</td><td class="num">&lt; $0.02</td><td class="gate-ops">ops</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="margin-top:12px; font-size:12.5px; color:var(--ink-2)">Statistical honesty: at n=150 the
+  95% interval on decision accuracy is about ±3.5 points, so treat sub-2-point moves as noise and
+  read the trend, not the tick. The golden labels are the ceiling on what we can measure — a second
+  labeler on a 30-case overlap gives us an inter-rater number to quote alongside every accuracy
+  figure.</p>
+</section>
+
+<section>
+  <div class="head"><span class="n">06</span><h2>What the dev makes tunable</h2></div>
+  <div class="col">
+  <p>Nothing clinical or behavioural is allowed to live in Python. Three declarative surfaces, each
+  versioned in git and each stamped onto every result row so any accuracy number can be traced back
+  to the exact configuration that produced it.</p>
+  </div>
+<pre><span class="c"># agents/antibiotic_gate/config.yaml</span>
+name: antibiotic_gate
+model: gemini-2.5-flash
+surface: background
+autonomy: <span class="k">L2</span>                              <span class="c"># nothing is dispensed without a human</span>
+trigger: { kind: schedule, schedule: "*/15 * * * *" }
+sources: [patients, allergies, medications, labs, vitals, orders, formulary]
+tree:    agents/antibiotic_gate/tree.yaml    <span class="c"># NEW — the decision tree as data</span>
+prompts: prompts/antibiotic_gate/            <span class="c"># NEW — versioned templates</span>
+action:
+  write_bigquery: dq_results.antibiotic_determinations
+  hitl_review: true
+  hitl_min_severity: ALL                     <span class="c"># POC: every order gets a reviewer</span>
+eval:
+  golden: eval/golden_cases.jsonl
+  gates: { safety_recall: 1.0, decision_accuracy: 0.95, regression_tolerance: 0.02 }
+business_context:
+  escalate_classes: [carbapenem, glycopeptide, oxazolidinone]
+  sepsis_criteria_min: 2</pre>
+  <div class="two" style="margin-top:24px">
+    <div>
+      <h3>New in the hub</h3>
+      <ul style="font-size:13.5px">
+        <li><code>decision_tree.py</code> — load <code>tree.yaml</code>, <code>traverse(facts)</code> returns decision, reason code, node path, citations. Pure, no I/O, no LLM.</li>
+        <li><code>patient_facts.py</code> — assemble one facts object per order from the seven sources.</li>
+        <li><code>prompts.py</code> — versioned template loader; <code>prompt_version</code> travels with every row.</li>
+        <li><code>eval/</code> — <code>golden.py</code>, <code>metrics.py</code>, <code>gates.py</code>, <code>runner.py</code>.</li>
+        <li><code>observability.py</code> — add a run id, one structured log line per node visited, and the <code>ops.agent_runs</code> writer.</li>
+        <li><code>ui/app.py</code> — clinical review card and a <code>/scorecard</code> route.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Deliberately untouched</h3>
+      <ul style="font-size:13.5px">
+        <li><code>sources.py</code> — the connector interface already abstracts CSV-offline from BigQuery-online. New tables are registry entries.</li>
+        <li><code>guardrails.py</code> — tool allow-list, cost cap and de-identification apply as-is.</li>
+        <li><code>sinks.py</code>, <code>settings.py</code>, <code>runtime.py</code> deploy path, the Terraform module pattern.</li>
+      </ul>
+      <p style="font-size:13px; color:var(--ink-2)">If a second spoke needs no hub changes beyond a
+      config and a tree, the chassis claim is proven. That is a POC finding worth reporting on its
+      own.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="n">07</span><h2>Build plan — 10 working days</h2></div>
+  <div class="tw">
+  <table>
+    <thead><tr><th class="num">days</th><th>phase</th><th>deliverable</th><th>done when</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1–2</td><td>Data and infra</td><td>Seeded synthetic generator, 9 source tables, Terraform for the <code>eval</code> dataset and the four append tables</td><td><code>load_seed.py</code> populates the dev project; every table returns rows</td></tr>
+      <tr><td class="num">3–4</td><td>Tree engine</td><td><code>decision_tree.py</code> + <code>tree.yaml</code> v0.1 + a unit test per node</td><td>Every node has at least one passing test; traversal emits a complete <code>node_path</code></td></tr>
+      <tr><td class="num">5</td><td>Spoke and facts</td><td><code>agents/antibiotic_gate/</code>, <code>patient_facts.py</code>, offline run over all 500 orders</td><td>500 determinations written, zero exceptions, every branch hit at least once</td></tr>
+      <tr><td class="num">6–7</td><td>Trigger and review UI</td><td>Cloud Scheduler every 15 min plus a manual <code>POST /run</code>; clinical review card with approve / deny and a reason code</td><td>A reviewer decision lands in <code>ops.review_queue</code> with an audit row and a run id</td></tr>
+      <tr><td class="num">8–9</td><td>Accuracy harness</td><td>150 golden cases, <code>metrics.py</code>, CI gate, nightly eval, <code>/scorecard</code></td><td>CI fails on a deliberately seeded regression; the scorecard renders all ten metrics</td></tr>
+      <tr><td class="num">10</td><td>Demo and handoff</td><td>Trigger → tree → UI → approve walkthrough, accuracy one-pager, risk log</td><td>Tech-lead walkthrough signed off; baseline numbers committed</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="col" style="margin-top:14px">
+  <p><b>Two review gates.</b> End of day 4: a clinical reviewer reads <code>tree.yaml</code>
+  line by line against the rules table above, before any eval work is built on top of it. End of
+  day 9: we accept the metric definitions and the baseline. Everything else is the dev's call.</p>
+  <p><b>Stretch, only if days 1–9 land clean.</b> Run the same golden set through an LLM-only variant
+  — tools and a prompt, no tree — and report both accuracy numbers side by side. One table that
+  quantifies why the deterministic core is the right architecture is worth more to the steering
+  committee than any amount of assertion.</p>
+  </div>
+</section>
+
+<section>
+  <div class="head"><span class="n">08</span><h2>Scope boundary and risks</h2></div>
+  <div class="two">
+    <div>
+      <h3>Explicitly out of scope</h3>
+      <ul style="font-size:13.5px">
+        <li>This is not clinical software and is not a clinical decision support claim. Synthetic data, no PHI, no real formulary, no dispensing integration.</li>
+        <li><code>AUTO_APPROVE_ENABLED=0</code> for the entire POC. The autonomy ladder stops at L2; the config field exists so the conversation about L3 is a config review, not a rewrite.</li>
+        <li>No real EHR or ordering-system connector. The order table is the seam.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Risks we are managing</h3>
+      <ul style="font-size:13.5px">
+        <li><b>Label ceiling.</b> One labeler on 150 cases bounds what we can claim; mitigated by the 30-case inter-rater overlap.</li>
+        <li><b>Tree drift.</b> Guidelines change. <code>tree_version</code> on every row means an accuracy shift is always attributable rather than mysterious.</li>
+        <li><b>LLM availability.</b> Gemini is on the explanation path only; the existing template fallback means a model outage degrades wording, not determinations.</li>
+        <li><b>Over-blocking.</b> A tree tuned only for safety recall escalates everything. The false-deny rate is tracked precisely so we notice.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Plan for a proof of concept on the existing <code>agent_factory</code> chassis. Synthetic data
+  throughout; not a clinical decision support system and not for patient care.
+</footer>
+</main>
